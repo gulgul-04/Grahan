@@ -1,0 +1,18 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+
+# Python / Backend
+backend/venv/
+venv/
+__pycache__/
+*.pyc
+.env
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+.npm
+
+# IDEs
+.vscode/
