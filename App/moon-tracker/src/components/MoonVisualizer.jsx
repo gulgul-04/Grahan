@@ -19,14 +19,16 @@ export default function MoonVisualizer({ phaseAngle, isEclipse }) {
   // Calculate the curved shadow offset based on the angle
   // This creates a much more realistic 3D sphere effect
   const calculateShadow = (angle) => {
-    // Normalize angle to 0-100 range for the shadow shift
-    let shift;
+    // We use 200px because the moon (w-48) is 192px wide. 
+    // This ensures the shadow fully covers the edges.
     if (angle <= 180) {
-      shift = -100 + (angle / 180) * 100;
-      return `inset ${shift}px 0px 0px 10px #030712`; // Dark shadow on left
+      // WAXING: Light is on the RIGHT. Shadow starts full on left and shrinks.
+      const shift = 200 - (angle / 180) * 200;
+      return `inset ${shift}px 0px 0px 10px #030712`;
     } else {
-      shift = 100 - ((angle - 180) / 180) * 100;
-      return `inset ${shift}px 0px 0px 10px #030712`; // Dark shadow on right
+      // WANING: Light is on the LEFT. Shadow starts on right and grows.
+      const shift = -((angle - 180) / 180) * 200;
+      return `inset ${shift}px 0px 0px 10px #030712`;
     }
   };
 
