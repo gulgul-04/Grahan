@@ -1,6 +1,7 @@
 import React from 'react';
 
-export default function MoonVisualizer({ phaseAngle, isEclipse }) {
+export default function MoonVisualizer({ phaseAngle }) {
+  // 1. Determine the name based on the angle
   const getPhaseName = (angle) => {
     if (angle === 0 || angle === 360) return "New Moon";
     if (angle > 0 && angle < 90) return "Waxing Crescent";
@@ -10,26 +11,28 @@ export default function MoonVisualizer({ phaseAngle, isEclipse }) {
     if (angle > 180 && angle < 270) return "Waning Gibbous";
     if (angle === 270) return "Last Quarter";
     if (angle > 270 && angle < 360) return "Waning Crescent";
+    return "New Moon";
   };
 
-  const glowColor = isEclipse 
-    ? "drop-shadow(0 0 30px rgba(255, 69, 0, 0.8))"
-    : "drop-shadow(0 0 20px rgba(255, 255, 255, 0.2))";
+  // 2. SVG Path Logic: This creates the "Spherical" curve
+  const calculateMoonPath = (angle) => {
+    const isWaxing = angle <= 180;
+    
+    // Normalize illumination (0 to 1)
+    const illumination = isWaxing ? (angle / 180) : (2 - angle / 180);
+    
+    // Calculate the 'bending' of the middle curve (from 50 to -50)
+    const midCurveX = 50 - (illumination * 100);
 
-  // Calculate the curved shadow offset based on the angle
-  // This creates a much more realistic 3D sphere effect
-  const calculateShadow = (angle) => {
-    // We use 200px because the moon (w-48) is 192px wide. 
-    // This ensures the shadow fully covers the edges.
-    if (angle <= 180) {
-      // WAXING: Light is on the RIGHT. Shadow starts full on left and shrinks.
-      const shift = 200 - (angle / 180) * 200;
-      return `inset ${shift}px 0px 0px 10px #030712`;
-    } else {
-      // WANING: Light is on the LEFT. Shadow starts on right and grows.
-      const shift = -((angle - 180) / 180) * 200;
-      return `inset ${shift}px 0px 0px 10px #030712`;
-    }
+    // SVG Sweep Flags (determines if the curve bulges in or out)
+    const sweep1 = isWaxing ? 0 : 1;
+    const sweep2 = illumination > 0.5 ? sweep1 : 1 - sweep1;
+
+    // The Path: 
+    // M 50 0: Start at top center
+    // A 50 50: Draw outer circle edge to bottom center
+    // A Math.abs(midCurveX) 50: Draw the "terminator" line back to top
+    return `M 50 0 A 50 50 0 1 ${sweep1} 50 100 A ${Math.max(1, Math.abs(midCurveX))} 50 0 1 ${sweep2} 50 0`;
   };
 
   return (
@@ -38,23 +41,34 @@ export default function MoonVisualizer({ phaseAngle, isEclipse }) {
         {getPhaseName(phaseAngle)}
       </h2>
       
-      {/* The 3D Moon Canvas */}
-      <div 
-        className="relative w-48 h-48 rounded-full bg-gray-200 transition-all duration-1000 ease-in-out border border-gray-600"
-        style={{ 
-          filter: glowColor,
-          boxShadow: calculateShadow(phaseAngle)
-        }}
-      >
-        {/* Adds a slight crater texture overlay */}
-        <div className="absolute inset-0 rounded-full opacity-10 bg-[radial-gradient(circle_at_30%_30%,_transparent_0%,_#000_100%)]"></div>
+      {/* 3. The SVG Viewport */}
+      <div className="relative w-48 h-48 drop-shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+        <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+          {/* Background: Dark Moon */}
+          <circle cx="50" cy="50" r="50" fill="#030712" />
+          
+          {/* Foreground: Lit Part (Calculated Curve) */}
+          <path 
+            d={calculateMoonPath(phaseAngle)} 
+            fill="#e5e7eb"
+            className="transition-all duration-1000 ease-in-out"
+          />
+
+          {/* Texture Overlay */}
+          <circle cx="50" cy="50" r="50" fill="url(#moonGradient)" opacity="0.15" />
+          
+          <defs>
+            <radialGradient id="moonGradient">
+              <stop offset="60%" stopColor="transparent" />
+              <stop offset="100%" stopColor="black" />
+            </radialGradient>
+          </defs>
+        </svg>
       </div>
 
-      {isEclipse && (
-        <span className="mt-10 px-4 py-1 bg-red-900/50 border border-red-500 text-red-200 rounded-full animate-pulse font-semibold tracking-wide text-sm">
-          LUNAR ECLIPSE IN PROGRESS
-        </span>
-      )}
+      <div className="mt-10 px-6 py-2 bg-blue-900/20 border border-blue-500/30 rounded-xl">
+        <span className="text-blue-400 font-mono">Phase Angle: {phaseAngle}°</span>
+      </div>
     </div>
   );
 }
